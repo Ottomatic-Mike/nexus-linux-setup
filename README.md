@@ -52,6 +52,23 @@ The helper:
   it after Nexus updates replace `wwwroot/index.html`;
 - provides `doctor`, `repair`, `status`, and `uninstall` commands.
 
+## Optional ASUS Ryujin III display support
+
+A separate, tested local bridge lets Nexus control the **320×240 Ryujin III LCD**
+(USB `0b05:1aa2`) when its native Linux transport reports
+`bulk-pipe-unavailable`. Edit widgets in Nexus; the companion sends the layout
+to the cooler and runs automatically in the background.
+
+```bash
+python3 ryujin/configure.py install
+python3 ryujin/configure.py doctor
+```
+
+This is opt-in and does not change the existing Y70 helper. See the
+[Ryujin setup guide](ryujin/README.md) for dependencies, editor usage, repair,
+removal, verified behavior and limits. Output is approximately one frame per
+second; this is currently tested against Nexus 3.0.12-beta.2.
+
 ## Safety boundaries
 
 This helper **does not**:
