@@ -1,60 +1,37 @@
-# Submission guide
+# Work sent to the Nexus maintainers
 
-Official public umbrella repository:
+The Y70, motherboard fan and Plasma tray fixes have been submitted as
+[Nexus PR #8](https://github.com/hello-nexus/nexus/pull/8):
+**fix(linux): add tested recovery helper for Y70, fans and Plasma startup**.
 
-```text
-https://github.com/hello-nexus/nexus
-```
+The PR adds an optional Linux recovery helper to the public Nexus repo.
+It does not change the normal installer to run the helper automatically.
+The later Ryujin III work in this repo is separate and is not included in that PR.
 
-As of 2026-09-10 the public README says the component repositories linked as
-submodules, including `nexus-service` and `nexus-web`, are private for now and
-require `hello-nexus` organization access to clone/build.
+## What the files in this folder are for
 
-That means the source fixes described here primarily belong in repositories
-that are not yet publicly reviewable. This package therefore does not invent
-private file paths or pretend to contain a source-level diff that could not have
-been validated.
+- [PR description](PR_DESCRIPTION.md): a short explanation of the submitted work.
+- [Issue notes](ISSUE_BODY.md): the four original problems, in plain English.
+- [Reproduction steps](REPRODUCTION.md): how the problems were observed.
+- [Maintainer notes](IMPLEMENTATION_NOTES.md): proposed fixes inside Nexus itself.
 
-## Recommended submission now
+These local notes do not change the text already posted on GitHub.
 
-Create an issue in `hello-nexus/nexus` using `PR_DESCRIPTION.md` as the body and
-attach/link the sanitized reproduction. Suggested issue title:
+## Why the PR adds a helper
 
-```text
-Linux: Y70 panel identity/simulator init, late hwmon fan discovery, and Plasma tray startup races
-```
+When the contribution was prepared, the contributor account could not access
+Nexus's `nexus-service` and `nexus-web` source repositories. We could adapt and
+test the working helper, but could not edit or test those private components.
 
-Ask the maintainers whether they want one internal cross-component change or
-separate PRs when `nexus-service` and `nexus-web` become public.
+The submitted helper also includes improvements over the original local script:
+for example, its Plasma startup wait is optional and has a time limit. Do not
+assume the two copies have identical options or behavior.
 
-## PR title when the target component source is available
+## If the maintainers make the component source available
 
-```text
-fix(linux): make Y70 kiosk, simulator, fan discovery and session adoption resilient
-```
+Use each component's own contribution and testing instructions. The maintainer
+notes describe the behavior to aim for without guessing private filenames.
+Keep unrelated changes out of the contribution and report which checks ran.
 
-## Git workflow once source is accessible
-
-```bash
-git clone https://github.com/<your-user>/<target-repo>.git
-cd <target-repo>
-git remote add upstream https://github.com/hello-nexus/<target-repo>.git
-git fetch upstream
-git switch -c fix/linux-y70-session-fans upstream/main
-
-# implement the contracts in IMPLEMENTATION_NOTES.md
-# add the tests in PR_DESCRIPTION.md
-
-git diff --check
-# run the component repository's documented test commands
-
-git add -A
-git commit -m "fix(linux): make Y70 lifecycle resilient"
-git push -u origin fix/linux-y70-session-fans
-```
-
-Then open a pull request from that branch to the maintainer repository.
-
-Before submission, remove local identifiers such as usernames, hostnames, panel
-record IDs, bearer tokens, serial numbers, absolute home paths and connector
-names that are unique to one machine.
+Before sharing logs or examples, remove login tokens, usernames, hostnames,
+serial numbers and screen IDs specific to your machine.

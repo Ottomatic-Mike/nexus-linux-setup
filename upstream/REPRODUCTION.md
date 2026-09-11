@@ -1,52 +1,56 @@
-# Reproduction checklist
+# How the original problems were checked
 
-Sanitized environment used for the verified reproduction:
+These are troubleshooting notes for maintainers, not setup steps to run on a
+working PC. Restarting Nexus interrupts its controls. Sleep, wake and login
+steps below are ways to investigate timing problems, not claims that every
+combination was tested.
+
+## Test PC
+
+| Part | Setup |
+| --- | --- |
+| Desktop | KDE Plasma 6, Wayland |
+| Screen | HYTE Y70 Touch, 3840×1100, used in portrait |
+| Nexus | 3.0.12 beta releases |
+| Linux kernel | Ubuntu 7.0.0-31-generic |
+| Motherboard | ASUS ROG STRIX X870E-E GAMING WIFI |
+| Fan controller | NCT6799-compatible |
+
+## Y70 shows the wrong layout
+
+1. Use the Y70 as an extended display with its normal KDE settings.
+2. Let Nexus open the general `/panel` page for the screen.
+3. Watch the browser window during startup, before KDE finishes placing it.
+4. Check which saved panel and panel type Nexus used.
+
+Observed problem: Nexus could create or use a `phone` panel for the physical
+Y70. Opening `/panel/<saved-y70-record-id>` directly showed the correct saved
+layout. The direct route also stayed correct across the checked reboots.
+
+Login, service restart, and sleep/wake are useful cases to examine when looking
+for temporary window sizes.
+
+## Editor preview stays blank
+
+1. Open the Y70 editor and inspect its `/panel?simulator=1` iframe.
+2. Watch the messages exchanged with that iframe.
+3. Reload the preview or reproduce the state where it is blank.
+
+The observed sequence was:
 
 ```text
-Desktop:     KDE Plasma 6 / Wayland
-Panel:       HYTE Y70 Touch, native 3840x1100, portrait
-Nexus:       v3.0.12 beta line
-Kernel:      Ubuntu 7.0.0-31-generic
-Motherboard: ASUS ROG STRIX X870E-E GAMING WIFI
-Fan chip:    NCT6799-compatible
+Preview says: simulator/ready
+Editor sends: simulator/set-theme
+Editor sends: simulator/set-layout
+Missing:      simulator/init
 ```
 
-## A. Y70 identity
+Making the preview visible was not enough. Sending one complete starting
+message made the saved layout appear immediately.
 
-1. Configure the Y70 as a normal extended KScreen output.
-2. Let Nexus auto-launch generic `/panel`.
-3. Exercise login/startup, service restart, suspend/resume, or hibernate/resume.
-4. Observe the kiosk before final KWin placement.
-5. Inspect the panel records/capabilities.
+## Motherboard fans are missing
 
-Failure: a `phone`-surface record is allocated/updated for the physical kiosk,
-or the kiosk binds to the wrong record.
-
-Control: direct `/panel/<known-y70-record-id>` stays on the correct stored Y70
-layout.
-
-## B. Simulator
-
-1. Open the Y70 device editor.
-2. Inspect the same-origin `/panel?simulator=1` iframe.
-3. Listen for `message` events in the iframe.
-4. Reload the iframe or reproduce the editor state loss.
-
-Observed failure sequence:
-
-```text
-simulator/ready
-simulator/set-theme
-simulator/set-layout
-(no simulator/init)
-```
-
-Control: one complete `simulator/init` immediately renders the saved Y70
-layout.
-
-## C. Motherboard fans
-
-Before module load:
+Before loading the driver, list the hardware names and fan control files:
 
 ```bash
 for h in /sys/class/hwmon/hwmon*; do
@@ -55,33 +59,31 @@ for h in /sys/class/hwmon/hwmon*; do
 done
 ```
 
-On the reproduced board there were no motherboard PWM attributes.
-
-Load the in-tree provider:
+On the tested board, motherboard fan controls were absent. Loading the supported
+driver with the following command made them appear:
 
 ```bash
 sudo modprobe nct6775
 ```
 
-Expected kernel identification on this board:
+Linux reported an NCT6796D-S/NCT6799D-R-compatible chip. The `nct6799` controller
+then had seven PWM channels, meaning seven exposed fan speed controls.
 
-```text
-NCT6796D-S/NCT6799D-R or compatible chip
-```
-
-Expected hwmon provider: `nct6799` with seven PWM channels.
-
-Restart Nexus only. Expected log:
+After restarting Nexus, its log reported:
 
 ```text
 [Motherboard] Fans channels=7 id=linux-fans
 ```
 
-## D. Plasma tray race
+The fans were then available in Nexus. The discovery check did not need to write
+fan speeds.
 
-1. Allow the system service to start before the user's Plasma session exists.
+## Tray icon is missing
+
+1. Let Nexus's service start before the Plasma desktop exists.
 2. Log into Plasma.
-3. Confirm Nexus hardware service is running but tray is absent.
-4. Restart `nexus.service` after `plasmashell` exists.
+3. Check whether hardware controls work but the tray icon is missing.
+4. Restart Nexus after the `plasmashell` process is running.
 
-Control: tray appears after the restart.
+On the test PC, the restart made the tray icon appear. Waiting for Plasma before
+Nexus started also fixed the local startup problem.
